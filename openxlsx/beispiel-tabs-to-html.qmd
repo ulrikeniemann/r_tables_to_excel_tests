@@ -1,0 +1,193 @@
+---
+title: "XXX Beispielauswertung Tabellen"
+subtitle: "Auswertung April 2023"
+date: last-modified
+date-format: "DD.MM.YYYY"
+autor: Ulrike Niemann
+lang: de
+format:
+  html:
+    theme: default
+    toc: true
+    embed-resources: true  
+title-block-banner: "#324FA3"
+execute:
+  echo: false
+#
+# ein rmd-header wäre folgendermaßen (sonst alles identisch)
+# title: "XXX Beispielauswertung Tabellen"
+# autor: Ulrike Niemann
+# lang: de
+# output:
+#   html_document:
+#     theme: cosmo
+#     toc: true
+#     toc_float:
+#       smooth_scroll: false
+---
+
+```{r setup, include = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+#| label: setup
+#| include: false
+#| warning: false
+# Load packages ----------------------------------------------------------------
+if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
+if (!require("knitr")) install.packages("knitr"); library(knitr)
+if (!require("janitor")) install.packages("janitor"); library(janitor)
+if (!require("sjlabelled")) install.packages("sjlabelled"); library(sjlabelled)
+if (!require("scales")) install.packages("scales"); library(scales)
+options(dplyr.summarise.inform = FALSE)
+# data -------------------------------------------------------------------------
+load(file = "./Daten/beispiel-daten.RData")
+# split ------------------------------------------------------------------------
+split <- "Kategorie"
+#dat <- dat %>% mutate(Typ = F1_01)
+#split <- "Typ"
+# functions --------------------------------------------------------------------
+crossTab = function(filtereddat , split, var, perc = FALSE) {
+  tab <- filtereddat %>%
+    group_by({{split}}, {{var}}) %>% 
+    summarise(n = n()) %>%
+    spread({{split}}, n) %>%  
+    adorn_totals("row", name = "Gesamt") %>%
+    adorn_totals("col", name = "Gesamt")
+  if (perc == TRUE) {
+    tab <- tab %>% 
+      adorn_percentages("col") %>% 
+      mutate_at(vars(-1), ~ percent(. ,digits = 1))
+  }
+  return(tab)
+}
+meanTab = function(filtereddat , split, var) {
+    filtereddat %>%
+    group_by({{split}}) %>%
+    summarise(Median = median(!!sym(var), na.rm = TRUE),
+              Mittelwert = mean(!!sym(var), na.rm = TRUE) %>% round(1)) %>% 
+    gather(!!var, Wert, 2:3) %>% 
+    spread({{split}}, Wert) %>% 
+    mutate("Gesamt" = c(median(filtereddat [[var]], na.rm = TRUE),
+                        mean(filtereddat [[var]], na.rm = TRUE) %>% round(1)))
+}
+tab = function(filtereddat , var, mean = FALSE, perc = FALSE) {
+  if (nrow(filtereddat ) > 0) {
+    if (mean == FALSE) {
+      crossTab(filtereddat , !!sym(split), !!sym(var), perc) %>% 
+        kable(caption = get_label(dat [[var]]))
+    } else {
+      meanTab(filtereddat , !!sym(split), var) %>% 
+        kable(caption = get_label(dat [[var]]))
+    }
+  }
+}
+zv_plot = function(filtereddat , split, var, level, title) {
+  zv <- filtereddat %>% 
+  group_by(!!sym(split), !!sym(var)) %>% 
+  summarise(n = n()) %>% 
+  mutate(p = n/sum(n)) %>% 
+  filter(!!sym(var) == level) %>% 
+  ungroup() %>% 
+  add_row(!!sym(split) := "Gesamt",
+    filtereddat %>% 
+      group_by(!!sym(var)) %>% 
+      summarise(n = n()) %>% 
+      mutate(p = n/sum(n)) %>% 
+      filter(!!sym(var) == level))
+  #
+  zv <- zv %>% 
+    mutate(split := !!sym(split) %>% 
+             factor() %>% 
+             fct_relevel("Gesamt", after = Inf))
+  #
+  ggplot(zv, aes(x = split, y = p)) +
+    geom_bar(fill = "#324FA3", stat = "identity") +
+    scale_y_continuous(
+      name = str_c("Anteil ", level),
+      labels = scales::percent) +
+    xlab(get_label(filtereddat)[split]) +
+    geom_text(aes(label = str_c(scales::percent(p, accuracy = 1), 
+                                "\n(n = ", n, ")")), 
+              vjust = 2, color = "white", size = 3) +
+    ggtitle(title) +
+    theme_minimal()
+}
+
+```
+```{css, echo = FALSE}
+.table {
+  font-size: 0.8em;
+}
+.quarto-title-block .quarto-title-banner {
+  background-image: url(example.png);
+  background-size: 250px;
+  background-position: left;
+  background-repeat: no-repeat;
+  padding-left: 50px;
+  background-origin: content-box;
+}
+.quarto-title-banner {
+  height: 180px;
+}
+```
+
+## Sektion 1 : XXX
+
+Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+
+### 1.a) Frage ...
+
+```{r}
+options(knitr.kable.NA = '-')
+tab(dat , "F1_01")
+tab(dat , "F1_01", perc = TRUE)
+```
+
+### 1.b) Anzahl ...
+```{r}
+tab(dat , "F1_02_kat")
+tab(dat , "F1_02_kat", perc = TRUE)
+tab(dat , "F1_02", mean = TRUE)
+```
+
+### 1.c) Frage ...
+```{r}
+tab(dat , "F1_03")
+tab(dat , "F1_03", perc = TRUE)
+```
+
+## Sektion 2 : ...
+
+### 2.a) Frage ...
+
+(Filter: F1.c) == "Ja")
+```{r}
+tab(dat %>% filter(F1_03 == "Ja"), "F2_01")
+tab(dat %>% filter(F1_03 == "Ja"), "F2_01", perc = TRUE)
+```
+
+### 2.b) Frage ...
+
+(Filter: F2.a) = "Ja" : xxx hat stattgefunden)
+```{r}
+filtereddat <- dat %>% filter(F2_01 == "Ja")
+tab(filtereddat , "F2_02")
+tab(filtereddat , "F2_02", perc = TRUE)
+```
+
+## Sektion: Grafiken
+
+### Grafik Typ XXX
+
+Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.
+
+```{r}
+zv_plot(dat , 
+        split = split,
+        var = "F1_01",
+        level = "Typ XXX",
+        title = "Typ XXX: Anteil")
+```
+
+<span style="color:red;">Hier ist das Ende ;)</span>
+
+
