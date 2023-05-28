@@ -127,6 +127,44 @@ addSheetFreqVar(wb, dat %>% filter(F2_01 == "Ja"),
                 var <- "F2_02", 
                 strFilter = '(Filter: 2.a) == "Ja")')
 # ------------------------------------------------------------------------------
+# multiple header test Excel
+tab <- crossTab(dat, split = Kategorie, var = F2_02, perc = FALSE)
+sh = addWorksheet(wb, "double-header")
+writeData(wb, sh, "Kategorie 1", startRow = 1, startCol = 3)
+writeData(wb, sh, "Kategorie 2", startRow = 1, startCol = 8)
+mergeCells(wb, sh, cols = 3:7, rows = 1)
+mergeCells(wb, sh, cols = 8:12, rows = 1)
+addStyle(wb, sh, 
+         cols = 2:13, rows = 1,
+         style = header_st, stack = TRUE)
+addStyle(wb, sh, 
+         cols = 3:13, rows = 1,
+         style = createStyle(fgFill = "orange", fontSize = 14, halign="center"), 
+         stack = TRUE)
+writeData(wb, sh, "Set 1", startRow = 3, startCol = 1)
+writeData(wb, sh, "Set 2", startRow = 6, startCol = 1)
+mergeCells(wb, sh, cols = 1, rows = 3:5)
+mergeCells(wb, sh, cols = 1, rows = 6:9)
+writeData(wb, sh, tab, startRow = 2, startCol = 2, headerStyle = header_st)
+leftBorder <- createStyle(border = "right", borderStyle = "thin")
+addStyle(wb, sh, 
+         cols = 2, rows = 1:10,
+         style = leftBorder, 
+         stack = TRUE)
+addStyle(wb, sh, 
+         cols = 7, rows = 1:10,
+         style = leftBorder, 
+         stack = TRUE)
+addStyle(wb, sh, 
+         cols = 12, rows = 1:10,
+         style = leftBorder, 
+         stack = TRUE)
+addStyle(wb, sh, 
+         cols = 2:13, rows = 10,
+         style = total_row_st, 
+         stack = TRUE)
+setColWidths(wb, sh, cols = 2, widths = "auto")
+# ------------------------------------------------------------------------------
 #
 # hier können noch viele andere Fragen folgen...
 #
